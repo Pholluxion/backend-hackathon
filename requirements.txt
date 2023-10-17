@@ -5,3 +5,4 @@ sqlalchemy
 asyncpg
 databases
 psycopg2
+python-dotenv
