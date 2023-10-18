@@ -59,11 +59,14 @@ async def login(request: Request, cursor=Depends(get_cursor), mongo_db=Depends(g
 
 
 @app.post("/secure-endpoint")
-async def secure_endpoint(data: TokenData, current_user: dict = Depends(get_current_user)):
+async def secure_endpoint(request: Request, current_user: dict = Depends(get_current_user)):
     # Si llegamos aquí, significa que el token es válido.
     # `current_user` contendrá la información del usuario extraída del token.
     email = current_user["email"]
+
     return {"message": f"Usuario autenticado: {email}"}
+
+
 
 
 
