@@ -21,6 +21,7 @@ from models.token_pay import TokenPayRequest
 from models.pay import PayRequest
 from models.token import LoginData
 from models.history import HistoryRequest
+from models.set_max_codes import MaxCodeRequest
 
 from datetime import datetime
 
@@ -112,7 +113,7 @@ async def generate_qr_code(data: QrCodeData, cursor=Depends(get_cursor), current
 
 
 @app.post("/scanqr", response_model=QRScanOutput)
-async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor)):
     # Extraemos el ID del código QR
     qr_code_id = data.qr_code_id
     
@@ -320,3 +321,17 @@ async def transaction_history(data: HistoryRequest, cursor=Depends(get_cursor), 
     transactions = [{"fecha": txn["fecha"], "monto": txn["monto"], "ip": txn["ip"]} for txn in result]
 
     return {"transactions": transactions}
+
+
+
+@app.post("/set-max-codes")
+async def set_max_codes(data: MaxCodeRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # Actualizar el campo max_code en la base de datos para el usuario
+    cursor.execute(
+        "UPDATE usuario SET max_code = %s WHERE usuario_id = %s",
+        (data.max_code, current_user['usuario_id'])
+    )
+
+    cursor.connection.commit()  # No olvides hacer commit si estás haciendo cambios en la base de datos
+
+    return {"message": "Max codes updated successfully!"}
