@@ -15,7 +15,7 @@ cursor = conn.cursor()
 
 # Conexión a MongoDB
 client = MongoClient(host=MONGODB_URL)
-mongo_db = client.FCpay
+mongo_db = client.test
 
 def get_connection():
     return conn
