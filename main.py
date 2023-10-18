@@ -15,6 +15,7 @@ from models.create_form import FormInput, FormOutput
 from models.accounts import AccountCreate, AccountResponse
 from models.retrieve_form import FormRetrieveRequest
 from models.forms import FormsRequest
+from models.send_form import FormData
 
 from datetime import datetime
 
@@ -162,7 +163,15 @@ async def get_forms(data: FormsRequest, cursor=Depends(get_cursor), current_user
     return {"form_ids": [result[0] for result in results]}
 
 
-
+@app.post("/send-form")
+async def send_form(data: FormData, mongo_db=Depends(get_mongo), current_user: dict = Depends(get_current_user)):
+    # 3. Agrega los datos a MongoDB.
+    collection = mongo_db.form_submissions
+    submission = data.dict()
+    submission["user_email"] = current_user["email"]  # Asume que quieres guardar el email del usuario que envía el formulario
+    collection.insert_one(submission)
+    
+    return {"message": "Form data saved successfully!"}
 
 
 
