@@ -20,6 +20,7 @@ from models.qrs import Qrs
 from models.users import UserRequest
 from models.token_pay import TokenPayRequest
 from models.pay import PayRequest
+from models.token import LoginData
 
 from datetime import datetime
 
@@ -44,13 +45,12 @@ async def read_root(db=Depends(get_db)):
 
 
 @app.post("/token")
-async def login(request: Request, cursor=Depends(get_cursor), mongo_db=Depends(get_mongo)):
+async def login(data: LoginData, cursor=Depends(get_cursor), mongo_db=Depends(get_mongo)):
     # Verificar que el usuario exista en PostgreSQL
     # Por simplicidad, supongamos que tienes una tabla "users" con los campos "email" y "hashed_password"
-    data = await request.json()
 
-    email = data['email']
-    password = data['password']
+    email = data.email
+    password = data.password
 
     cursor.execute("SELECT correo_electronico, password_hash FROM usuario WHERE correo_electronico = %s", (email,))
     user = cursor.fetchone()
