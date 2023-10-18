@@ -20,6 +20,7 @@ from models.users import UserRequest
 from models.token_pay import TokenPayRequest
 from models.pay import PayRequest
 from models.token import LoginData
+from models.history import HistoryRequest
 
 from datetime import datetime
 
@@ -297,3 +298,25 @@ async def process_payment(pay_request: PayRequest, mongo_db=Depends(get_mongo), 
     mongo_db.tokens_pay.delete_one({"token": pay_request.token})
 
     return {"message": "Payment processed successfully"}
+
+
+@app.post("/history")
+async def transaction_history(data: HistoryRequest, cursor=Depends(get_cursor), mongo_db=Depends(get_mongo), current_user: dict = Depends(get_current_user)):
+    # Comprobación de seguridad: Asegurarse de que la cuenta pertenece al usuario actual.
+    # Esto es opcional pero es una buena práctica para asegurarse de que un usuario no pueda ver las transacciones de otro.
+
+    cursor.execute(
+        "SELECT 1 FROM cuenta_ahorro WHERE usuario_id = %s AND cuenta_id = %s",
+        (current_user['usuario_id'], data.cuenta_id)
+    )
+    if not cursor.fetchone():
+        raise HTTPException(status_code=403, message="Not authorized to view this account's history.")
+    
+    # Buscar transacciones asociadas al cuenta_id en la base de datos
+    # Asumiendo que tienes una tabla "transacciones" con los campos que quieras mostrar
+    result = mongo_db.transacciones.find({"cuenta_id": data.cuenta_id})
+
+    # Convertir el cursor en una lista y luego en una lista de diccionarios para la respuesta
+    transactions = [{"fecha": txn["fecha"], "monto": txn["monto"], "ip": txn["ip"]} for txn in result]
+
+    return {"transactions": transactions}
