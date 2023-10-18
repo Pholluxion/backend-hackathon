@@ -11,6 +11,9 @@ from typing import Union
 
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+from models.qr_code import QrCodeData
+
+from datetime import datetime
 
 app = FastAPI()
 
@@ -67,6 +70,24 @@ async def secure_endpoint(request: Request, current_user: dict = Depends(get_cur
     return {"message": f"Usuario autenticado: {email}"}
 
 
+@app.post("/generateqr")
+async def generate_qr_code(data: QrCodeData, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # Extraer la información del modelo
+    account_id = data.account_id
+    description = data.description
+    form_id = data.form_id
+    image = data.image
 
+    # Obtener la fecha actual
+    current_date = datetime.now()
 
+    # Insertar en la base de datos PostgreSQL
+    cursor.execute(
+        "INSERT INTO codigo_pago(codigo_id, fecha_generacion, descripcion_prellenado, formulario_id, imagen_logo, cuenta_id) VALUES (generar_codigo_aleatorio(%s), %s, %s, %s, %s, %s)",
+        (5,current_date, description, form_id, image, account_id)
+    )
+
+    cursor.connection.commit()  # No olvides hacer commit si estás haciendo cambios en la base de datos
+    
+    return {"message": "QR Code data saved successfully!"}
 
