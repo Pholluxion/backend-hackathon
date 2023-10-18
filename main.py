@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection, release_connection, get_mongo, get_cursor
 from auth.db_queries import save_token_to_mongo
 from auth.jwt_utils import create_access_token, decode_access_token
@@ -8,6 +9,7 @@ from typing import Union
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
+#import models
 from models.qr_code import QrCodeData
 from models.scanqr import QRScanInput, QRScanOutput
 from models.create_form import FormInput, FormOutput
@@ -29,6 +31,15 @@ import json
 from typing import List
 
 app = FastAPI()
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_db():
     db = None
