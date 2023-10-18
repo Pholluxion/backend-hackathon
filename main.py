@@ -41,8 +41,6 @@ def get_db():
 
 @app.get("/")
 async def read_root(db=Depends(get_db)):
-    # Tu código que usa la conexión a la base de datos
-    #db.execute("SELECT ...")  # Ejemplo
     return {"greeting": "Hello, World!", "message": "Welcome to FastAPI!"}
 
 
@@ -89,13 +87,15 @@ async def generate_qr_code(data: QrCodeData, cursor=Depends(get_cursor), current
     description = data.description
     form_id = data.form_id
     image = data.image
+    monto = data.monto
+    documento = data.documento
     # Obtener la fecha actual
     current_date = datetime.now()
 
     # Insertar en la base de datos PostgreSQL
     cursor.execute(
-        "INSERT INTO codigo_pago(codigo_id, fecha_generacion, descripcion_prellenado, formulario_id, imagen_logo, cuenta_id) VALUES (generar_codigo_aleatorio(%s), %s, %s, %s, %s, %s) RETURNING codigo_id",
-        (5, current_date, description, form_id, image, account_id)
+        "INSERT INTO codigo_pago(codigo_id, fecha_generacion, descripcion_prellenado, formulario_id, imagen_logo, cuenta_id, monto_prellenado, documento_prellenado) VALUES (generar_codigo_aleatorio(%s), %s, %s, %s, %s, %s, %s, %s) RETURNING codigo_id",
+        (5, current_date, description, form_id, image, account_id, monto, documento)
     )
 
     codigo_id_inserted = cursor.fetchone()[0]
@@ -119,7 +119,7 @@ async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor)):
     
     # Buscamos en la base de datos PostgreSQL
     cursor.execute(
-        "SELECT formulario_id, cuenta_id FROM codigo_pago WHERE codigo_id = %s",
+        "SELECT formulario_id, cuenta_id,monto_prellenado,descripcion_prellenado,documento_prellenado FROM codigo_pago WHERE codigo_id = %s",
         (qr_code_id,)
     )
 
@@ -127,8 +127,9 @@ async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor)):
     if not result:
         raise HTTPException(status_code=404, detail="QR Code not found")
 
-    form_id, account_id = result
-    return {"form_id": form_id, "account_id": account_id}
+    form_id, account_id, monto, desc, doc = result
+
+    return {"form_id": form_id, "account_id": account_id, "monto": monto, "description": desc, "documento": doc}
 
     
 
