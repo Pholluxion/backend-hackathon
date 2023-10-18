@@ -16,6 +16,8 @@ from models.accounts import AccountCreate, AccountResponse
 from models.retrieve_form import FormRetrieveRequest
 from models.forms import FormsRequest
 from models.send_form import FormData
+from models.qrs import Qrs
+
 
 from datetime import datetime
 
@@ -174,6 +176,22 @@ async def send_form(data: FormData, mongo_db=Depends(get_mongo), current_user: d
     return {"message": "Form data saved successfully!"}
 
 
+@app.post("/qrs")
+async def retrieve_qrs(qr_request: Qrs, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # Si necesitas validar el user_id con el token, puedes hacerlo aquí usando current_user
+
+    # Consulta a la base de datos para recuperar los QRs asociados con el account_id
+    cursor.execute("SELECT * FROM codigo_pago WHERE cuenta_id = %s", (qr_request.account_id,))
+    
+    # Obtén los nombres de las columnas
+    column_names = [desc[0] for desc in cursor.description]
+
+    # Transforma los resultados a una lista de diccionarios
+    qrs = [dict(zip(column_names, row)) for row in cursor.fetchall()]
+
+    # Convierte los resultados a una lista de diccionarios u otra estructura según prefieras
+    # Por ahora, simplemente retornaremos los resultados brutos.
+    return {"qrs": qrs}
 
 
 
