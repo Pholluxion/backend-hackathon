@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from models.qr_code import QrCodeData
 from models.scanqr import QRScanInput, QRScanOutput
 from models.create_form import FormInput, FormOutput
-from models.accounts import AccountCreate, AccountResponse
+from models.accounts import AccountResponse
 from models.retrieve_form import FormRetrieveRequest
 from models.forms import FormsRequest
 from models.send_form import FormData
@@ -24,6 +24,7 @@ from models.token import LoginData
 from datetime import datetime
 
 import json
+from typing import List
 
 app = FastAPI()
 
@@ -221,46 +222,23 @@ async def retrieve_users(user_request: UserRequest, cursor=Depends(get_cursor), 
     return {"users": users}
 
 
-from typing import List
-
-@app.post("/accounts", response_model=List[AccountResponse])
-async def create_account(account_data: AccountResponse, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
-    # Extraer datos del modelo
-    numero_cuenta = account_data.numero_cuenta
-    pin = account_data.pin
-    saldo = account_data.saldo
-    tipo = account_data.tipo
-    proposito = account_data.proposito
-
-    # Insertar en la base de datos PostgreSQL
+@app.post("/accounts")
+async def list_accounts(cursor=Depends(get_cursor), current_user: str = Depends(get_current_user)):
+    # Buscar cuentas asociadas al user_id en la base de datos
     cursor.execute(
-        "INSERT INTO cuenta_ahorro(usuario_id, numero_cuenta, pin, saldo, fecha_creacion, tipo, proposito) VALUES (%s, %s, %s, %s, NOW(), %s, %s) RETURNING cuenta_id",
-        (current_user["usuario_id"], numero_cuenta, pin, saldo, tipo, proposito)
+        "SELECT numero_cuenta, saldo, tipo FROM cuenta_ahorro WHERE usuario_id = %s",
+        (current_user['usuario_id'],)
     )
 
-    cuenta_id = cursor.fetchone()[0]
-    cursor.connection.commit()  # No olvides hacer commit para guardar los cambios en la base de datos
-    
-    # Obtener los datos de la cuenta recién creada
-    cursor.execute("SELECT * FROM cuenta_ahorro WHERE cuenta_id = %s", (cuenta_id,))
-    account_data = cursor.fetchone()
-
-    # Verificar si la cuenta existe
-    if not account_data:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    # Crear la respuesta
-    account_response = [
-        AccountResponse(
-            cuenta_id=account_data[0],
-            numero_cuenta=account_data[2],
-            saldo=account_data[4],
-            tipo=account_data[6],
-            proposito=account_data[7]
-        )
+    # Construir la respuesta
+    accounts = [
+        {"numero_cuenta": row[0], "saldo": row[1], "tipo": row[2]}
+        for row in cursor.fetchall()
     ]
 
-    return account_response
+    return {"accounts": accounts}
+
+
 
 
 @app.post("/token-pay")
