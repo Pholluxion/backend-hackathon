@@ -4,7 +4,6 @@ from auth.db_queries import save_token_to_mongo
 from auth.jwt_utils import create_access_token, decode_access_token
 from auth.password_utils import verify_password, get_password_hash
 from auth.dependencies import get_current_user
-from models.secure_endpoint import TokenData
 from typing import Union
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
@@ -70,14 +69,6 @@ async def login(data: LoginData, cursor=Depends(get_cursor), mongo_db=Depends(ge
 
     return {"access_token": access_token, "token_type": "bearer"}
 
-
-@app.post("/secure-endpoint")
-async def secure_endpoint(request: Request, current_user: dict = Depends(get_current_user)):
-    # Si llegamos aquí, significa que el token es válido.
-    # `current_user` contendrá la información del usuario extraída del token.
-    email = current_user["email"]
-
-    return {"message": f"Usuario autenticado: {email}"}
 
 
 @app.post("/generateqr")
