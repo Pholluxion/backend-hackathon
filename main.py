@@ -1,21 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException
 from database import get_connection, release_connection, get_mongo, get_cursor
-
 from auth.db_queries import save_token_to_mongo
 from auth.jwt_utils import create_access_token
 from auth.password_utils import verify_password, get_password_hash
 from auth.dependencies import get_current_user
 from models.secure_endpoint import TokenData
-
 from typing import Union
-
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
-
 from models.qr_code import QrCodeData
 from models.scanqr import QRScanInput, QRScanOutput
+from models.create_form import FormInput, FormOutput
+from models.accounts import AccountCreate, AccountResponse
 
 from datetime import datetime
+
+import json
 
 app = FastAPI()
 
@@ -114,4 +114,43 @@ async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor), current_us
 
     
 
+@app.post("/create-form", response_model=FormOutput)
+async def create_form(data: FormInput, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # Extraer información del modelo
+    entidad_id = data.entidad_id
+    campos_json = json.dumps([field.model_dump() for field in data.campos])
+    
+    # Insertar en la base de datos PostgreSQL
+    cursor.execute(
+        "INSERT INTO formulario(entidad_id, json_campos) VALUES (%s, %s)",
+        (entidad_id, campos_json)
+    )
 
+    cursor.connection.commit()  # No olvides hacer commit para guardar los cambios en la base de datos
+    
+    return {"message": "Form created successfully!"}
+
+
+
+@app.post("/accounts", response_model=AccountResponse)
+async def create_account(account_data: AccountCreate, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    hashed_password = get_password_hash(account_data.password)
+
+    cursor.execute(
+        "INSERT INTO usuario (entidad_id, nombre_completo, documento_identidad, correo_electronico, numero_contacto, password_hash, qr_permitido, saldo_total) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING usuario_id",
+        (current_user["entidad_id"], account_data.nombre_completo, account_data.documento_identidad, account_data.correo_electronico, account_data.numero_contacto, hashed_password, account_data.qr_permitido, account_data.saldo_total)
+    )
+
+    usuario_id = cursor.fetchone()[0]
+    cursor.connection.commit()
+
+    return {
+        "usuario_id": usuario_id,
+        "entidad_id": current_user["entidad_id"],
+        "nombre_completo": account_data.nombre_completo,
+        "documento_identidad": account_data.documento_identidad,
+        "correo_electronico": account_data.correo_electronico,
+        "numero_contacto": account_data.numero_contacto,
+        "qr_permitido": account_data.qr_permitido,
+        "saldo_total": account_data.saldo_total
+    }
