@@ -11,7 +11,9 @@ from typing import Union
 
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+
 from models.qr_code import QrCodeData
+from models.scanqr import QRScanInput, QRScanOutput
 
 from datetime import datetime
 
@@ -90,4 +92,26 @@ async def generate_qr_code(data: QrCodeData, cursor=Depends(get_cursor), current
     cursor.connection.commit()  # No olvides hacer commit si estás haciendo cambios en la base de datos
     
     return {"message": "QR Code data saved successfully!"}
+
+
+@app.post("/scanqr", response_model=QRScanOutput)
+async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # Extraemos el ID del código QR
+    qr_code_id = data.qr_code_id
+    
+    # Buscamos en la base de datos PostgreSQL
+    cursor.execute(
+        "SELECT formulario_id, cuenta_id FROM codigo_pago WHERE codigo_id = %s",
+        (qr_code_id,)
+    )
+
+    result = cursor.fetchone()
+    if not result:
+        raise HTTPException(status_code=404, detail="QR Code not found")
+
+    form_id, account_id = result
+    return {"form_id": form_id, "account_id": account_id}
+
+    
+
 
