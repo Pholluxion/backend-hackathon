@@ -8,10 +8,13 @@ from models.secure_endpoint import TokenData
 from typing import Union
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+
 from models.qr_code import QrCodeData
 from models.scanqr import QRScanInput, QRScanOutput
 from models.create_form import FormInput, FormOutput
 from models.accounts import AccountCreate, AccountResponse
+from models.retrieve_form import FormRetrieveRequest
+from models.forms import FormsRequest
 
 from datetime import datetime
 
@@ -118,12 +121,12 @@ async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor), current_us
 async def create_form(data: FormInput, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
     # Extraer información del modelo
     entidad_id = data.entidad_id
-    campos_json = json.dumps([field.model_dump() for field in data.campos])
+    campos = json.dumps([field.model_dump() for field in data.campos])
     
     # Insertar en la base de datos PostgreSQL
     cursor.execute(
-        "INSERT INTO formulario(entidad_id, json_campos) VALUES (%s, %s)",
-        (entidad_id, campos_json)
+        "INSERT INTO formulario(entidad_id, datos_json) VALUES (%s, %s)",
+        (entidad_id, campos)
     )
 
     cursor.connection.commit()  # No olvides hacer commit para guardar los cambios en la base de datos
@@ -131,7 +134,56 @@ async def create_form(data: FormInput, cursor=Depends(get_cursor), current_user:
     return {"message": "Form created successfully!"}
 
 
+@app.post("/retrieve-form")
+async def retrieve_form(data: FormRetrieveRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # 3. Ejecuta una consulta para obtener datos_json.
+    cursor.execute("SELECT datos_json FROM formulario WHERE formulario_id = %s", (data.form_id,))
+    result = cursor.fetchone()
 
+    # Verificar si el formulario existe.
+    if not result:
+        raise HTTPException(status_code=404, detail="Form not found")
+
+    # 4. Retorna el campo datos_json.
+    return {"datos_json": result[0]}
+
+
+@app.post("/forms")
+async def get_forms(data: FormsRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+    # 3. Ejecuta una consulta para obtener los IDs.
+    cursor.execute("SELECT formulario_id FROM formulario WHERE entidad_id = %s", (data.entidad_id,))
+    results = cursor.fetchall()
+
+    # Verificar si hay formularios para esa entidad.
+    if not results:
+        raise HTTPException(status_code=404, detail="No forms found for the given entity")
+
+    # 4. Retorna la lista de IDs.
+    return {"form_ids": [result[0] for result in results]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
 @app.post("/accounts", response_model=AccountResponse)
 async def create_account(account_data: AccountCreate, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
     hashed_password = get_password_hash(account_data.password)
