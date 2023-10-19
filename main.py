@@ -244,13 +244,13 @@ async def retrieve_users(user_request: UserRequest, cursor=Depends(get_cursor), 
 async def list_accounts(cursor=Depends(get_cursor), current_user: str = Depends(get_current_user)):
     # Buscar cuentas asociadas al user_id en la base de datos
     cursor.execute(
-        "SELECT numero_cuenta, saldo, tipo FROM cuenta_ahorro WHERE usuario_id = %s",
+        "SELECT numero_cuenta, saldo, tipo, cuenta_id FROM cuenta_ahorro WHERE usuario_id = %s",
         (current_user['usuario_id'],)
     )
 
     # Construir la respuesta
     accounts = [
-        {"numero_cuenta": row[0], "saldo": row[1], "tipo": row[2]}
+        { "account_id": row[3], "numero_cuenta": row[0], "saldo": row[1], "tipo": row[2]}
         for row in cursor.fetchall()
     ]
 
