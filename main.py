@@ -162,7 +162,7 @@ async def create_form(data: FormInput, cursor=Depends(get_cursor), current_user:
 
 
 @app.post("/retrieve-form")
-async def retrieve_form(data: FormRetrieveRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+async def retrieve_form(data: FormRetrieveRequest, cursor=Depends(get_cursor)):
     # 3. Ejecuta una consulta para obtener datos_json.
     cursor.execute("SELECT datos_json FROM formulario WHERE formulario_id = %s", (data.form_id,))
     result = cursor.fetchone()
@@ -176,7 +176,7 @@ async def retrieve_form(data: FormRetrieveRequest, cursor=Depends(get_cursor), c
 
 
 @app.post("/forms")
-async def get_forms(data: FormsRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+async def get_forms(data: FormsRequest, cursor=Depends(get_cursor)):
     # 3. Ejecuta una consulta para obtener los IDs.
     cursor.execute("SELECT formulario_id,datos_json,nombre FROM formulario WHERE entidad_id = %s", (data.entidad_id,))
     results = cursor.fetchall()
