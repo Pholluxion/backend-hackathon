@@ -149,11 +149,11 @@ async def create_form(data: FormInput, cursor=Depends(get_cursor)):
     # Extraer información del modelo
     entidad_id = data.entidad_id
     campos = json.dumps([field.model_dump() for field in data.campos])
-    
+    nombre = data.nombre
     # Insertar en la base de datos PostgreSQL
     cursor.execute(
-        "INSERT INTO formulario(entidad_id, datos_json) VALUES (%s, %s)",
-        (entidad_id, campos)
+        "INSERT INTO formulario(entidad_id, datos_json,nombre) VALUES (%s, %s,%s)",
+        (entidad_id, campos,nombre)
     )
 
     cursor.connection.commit()  # No olvides hacer commit para guardar los cambios en la base de datos

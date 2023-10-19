@@ -8,6 +8,7 @@ class Field(BaseModel):
 class FormInput(BaseModel):
     entidad_id: int
     campos: List[Field]
+    nombre: str
 
 class FormOutput(BaseModel):
     message: str
