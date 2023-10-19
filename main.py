@@ -227,7 +227,7 @@ async def retrieve_users(user_request: UserRequest, cursor=Depends(get_cursor)):
 
     # Consulta a la base de datos para recuperar los usuarios asociados con el entidad_id
     cursor.execute(
-        "SELECT usuario_id, nombre_completo, qr_permitido, max_code, qr_generados documento_identidad FROM usuario WHERE entidad_id = %s",
+        "SELECT usuario_id, nombre_completo, qr_permitido, max_code, qr_generados, documento_identidad FROM usuario WHERE entidad_id = %s",
         (user_request.entidad_id,)
     )
 
