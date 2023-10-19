@@ -145,7 +145,7 @@ async def scan_qr_code(data: QRScanInput, cursor=Depends(get_cursor)):
     
 
 @app.post("/create-form", response_model=FormOutput)
-async def create_form(data: FormInput, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+async def create_form(data: FormInput, cursor=Depends(get_cursor)):
     # Extraer información del modelo
     entidad_id = data.entidad_id
     campos = json.dumps([field.model_dump() for field in data.campos])
@@ -222,7 +222,7 @@ async def retrieve_qrs(qr_request: Qrs, cursor=Depends(get_cursor), current_user
 
 
 @app.post("/users")
-async def retrieve_users(user_request: UserRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
+async def retrieve_users(user_request: UserRequest, cursor=Depends(get_cursor)):
     # Si necesitas validar el user_id con el token, puedes hacerlo aquí usando current_user
 
     # Consulta a la base de datos para recuperar los usuarios asociados con el entidad_id

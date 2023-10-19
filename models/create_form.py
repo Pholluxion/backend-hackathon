@@ -6,7 +6,6 @@ class Field(BaseModel):
     type: str
 
 class FormInput(BaseModel):
-    token: str
     entidad_id: int
     campos: List[Field]
 
