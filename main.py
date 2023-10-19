@@ -178,15 +178,19 @@ async def retrieve_form(data: FormRetrieveRequest, cursor=Depends(get_cursor), c
 @app.post("/forms")
 async def get_forms(data: FormsRequest, cursor=Depends(get_cursor), current_user: dict = Depends(get_current_user)):
     # 3. Ejecuta una consulta para obtener los IDs.
-    cursor.execute("SELECT formulario_id FROM formulario WHERE entidad_id = %s", (data.entidad_id,))
+    cursor.execute("SELECT formulario_id,datos_json,nombre FROM formulario WHERE entidad_id = %s", (data.entidad_id,))
     results = cursor.fetchall()
 
     # Verificar si hay formularios para esa entidad.
     if not results:
         raise HTTPException(status_code=404, detail="No forms found for the given entity")
 
+    data = []
+    for result in results:
+        data.append({"form_id": result[0], "num_campos": len(result[1]) , "nombre":  str(result[2])})
+
     # 4. Retorna la lista de IDs.
-    return {"form_ids": [result[0] for result in results]}
+    return {"forms": data}
 
 
 @app.post("/send-form")
